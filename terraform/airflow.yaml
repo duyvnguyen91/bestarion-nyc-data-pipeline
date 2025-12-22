@@ -1,0 +1,42 @@
+# Simple Airflow configuration
+executor: "LocalExecutor"
+airflowVersion: "2.8.0"
+
+webserver:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+  nodeSelector:
+    workload-type: "preemptible"
+  tolerations:
+    - key: "workload-type"
+      operator: "Equal"
+      value: "preemptible"
+      effect: "NoSchedule"
+
+scheduler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+  nodeSelector:
+    workload-type: "preemptible"
+  tolerations:
+    - key: "workload-type"
+      operator: "Equal"
+      value: "preemptible"
+      effect: "NoSchedule"
+
+# Use default PostgreSQL from the chart for now
+postgresql:
+  enabled: true
+
