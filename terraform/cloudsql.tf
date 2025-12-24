@@ -6,11 +6,38 @@ resource "google_project_service" "sqladmin_api" {
   disable_on_destroy = false
 }
 
+# Enable Service Networking API
+resource "google_project_service" "servicenetworking_api" {
+  service = "servicenetworking.googleapis.com"
+  project = var.project_id
+
+  disable_on_destroy = false
+}
+
+resource "google_compute_global_address" "cloudsql_private_range" {
+  name          = "cloudsql-private-range"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = var.vpc_network_self_link
+}
+
+resource "google_service_networking_connection" "cloudsql_vpc_connection" {
+  network                 = var.vpc_network_self_link
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.cloudsql_private_range.name]
+
+  depends_on = [
+    google_project_service.servicenetworking_api
+  ]
+}
+
 # CloudSQL Instance
 resource "google_sql_database_instance" "primary" {
-  name             = var.cloudsql_instance_name
-  database_version = var.database_version
-  region           = var.region
+  name                = var.cloudsql_instance_name
+  database_version    = var.database_version
+  region              = var.region
+  deletion_protection = false
 
   settings {
     tier                        = var.database_tier
@@ -25,7 +52,7 @@ resource "google_sql_database_instance" "primary" {
 
     ip_configuration {
       ipv4_enabled    = true
-      private_network = null
+      private_network = var.vpc_network_self_link
     }
 
     database_flags {
@@ -40,8 +67,13 @@ resource "google_sql_database_instance" "primary" {
 }
 
 # Database
-resource "google_sql_database" "database" {
-  name     = var.database_name
+resource "google_sql_database" "airflow_database" {
+  name     = var.airflow_database_name
+  instance = google_sql_database_instance.primary.name
+}
+
+resource "google_sql_database" "datalake_database" {
+  name     = "datalake"
   instance = google_sql_database_instance.primary.name
 }
 

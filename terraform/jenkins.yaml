@@ -8,13 +8,13 @@ controller:
     limits:
       cpu: "2000m"
       memory: "4Gi"
-  nodeSelector:
-    workload-type: "preemptible"
-  tolerations:
-    - key: "workload-type"
-      operator: "Equal"
-      value: "preemptible"
-      effect: "NoSchedule"
+  # nodeSelector:
+  #   workload-type: "preemptible"
+  # tolerations:
+  #   - key: "workload-type"
+  #     operator: "Equal"
+  #     value: "preemptible"
+  #     effect: "NoSchedule"
 agent:
   resources:
     requests:

@@ -34,11 +34,6 @@ output "cloudsql_private_ip" {
   sensitive   = false
 }
 
-output "database_name" {
-  description = "Database name"
-  value       = google_sql_database.database.name
-}
-
 output "database_user" {
   description = "Database user name"
   value       = google_sql_user.user.name

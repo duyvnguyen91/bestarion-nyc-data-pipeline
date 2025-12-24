@@ -1,42 +1,31 @@
-# Simple Airflow configuration
-executor: "LocalExecutor"
-airflowVersion: "2.8.0"
+images:
+  airflow:
+    repository: asia-docker.pkg.dev/civil-treat-482015-n6/airflow/airflow
+    tag: v0.0.1
+    pullPolicy: Always
 
-webserver:
-  replicas: 1
-  resources:
-    requests:
-      cpu: "500m"
-      memory: "1Gi"
-    limits:
-      cpu: "2000m"
-      memory: "2Gi"
-  nodeSelector:
-    workload-type: "preemptible"
-  tolerations:
-    - key: "workload-type"
-      operator: "Equal"
-      value: "preemptible"
-      effect: "NoSchedule"
-
-scheduler:
-  replicas: 1
-  resources:
-    requests:
-      cpu: "500m"
-      memory: "1Gi"
-    limits:
-      cpu: "2000m"
-      memory: "2Gi"
-  nodeSelector:
-    workload-type: "preemptible"
-  tolerations:
-    - key: "workload-type"
-      operator: "Equal"
-      value: "preemptible"
-      effect: "NoSchedule"
-
-# Use default PostgreSQL from the chart for now
 postgresql:
-  enabled: true
+  enabled: false
 
+data:
+  metadataConnection:
+    protocol: postgresql
+    host: 10.72.0.7
+    port: 5432
+    db: airflow
+    user: postgres
+    pass: 'AiA]-o_R-rBu6+0!'
+
+dags:
+  persistence:
+    enabled: false
+
+  gitSync:
+    enabled: true
+    repo: git@github.com:duyvnguyen91/bestarion-nyc-data-pipeline.git
+    branch: main
+    rev: HEAD
+    depth: 1
+    subPath: dags
+    wait: 30
+    sshKeySecret: airflow-git-ssh

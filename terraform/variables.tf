@@ -19,7 +19,7 @@ variable "zone" {
 variable "cluster_name" {
   description = "Name of the GKE cluster"
   type        = string
-  default     = "bestarion-nyc-cluster"
+  default     = "demo-cluster"
 }
 
 variable "node_pool_name" {
@@ -43,7 +43,7 @@ variable "machine_type" {
 variable "cloudsql_instance_name" {
   description = "Name of the CloudSQL instance"
   type        = string
-  default     = "bestarion-nyc-db"
+  default     = "postgres"
 }
 
 variable "database_version" {
@@ -55,19 +55,19 @@ variable "database_version" {
 variable "database_tier" {
   description = "Tier for CloudSQL instance (small instance)"
   type        = string
-  default     = "db-f1-micro"
+  default     = "db-custom-1-3840"
 }
 
-variable "database_name" {
-  description = "Name of the default database"
+variable "airflow_database_name" {
+  description = "Name of the airflow database"
   type        = string
-  default     = "bestarion_db"
+  default     = "airflow"
 }
 
 variable "database_user" {
   description = "Database user name"
   type        = string
-  default     = "bestarion_user"
+  default     = "postgres"
 }
 
 variable "jenkins_namespace" {
@@ -100,3 +100,8 @@ variable "subnetwork" {
   default     = ""
 }
 
+variable "vpc_network_self_link" {
+  description = "VPC network self link"
+  type        = string
+  default     = "https://www.googleapis.com/compute/v1/projects/civil-treat-482015-n6/global/networks/default"
+}

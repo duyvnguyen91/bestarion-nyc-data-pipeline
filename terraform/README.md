@@ -117,6 +117,11 @@ Get the database password:
 terraform output -raw database_password
 ```
 
+Connect to CloudSQL
+```bash
+gcloud sql connect bestarion-nyc-db --user=postgres --quiet
+```
+
 ## File Structure
 
 ```

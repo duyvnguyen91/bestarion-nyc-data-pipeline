@@ -97,16 +97,16 @@ resource "google_container_node_pool" "default_pool" {
       workload-type = "preemptible"
     }
 
-    taint {
-      key    = "workload-type"
-      value  = "preemptible"
-      effect = "NO_SCHEDULE"
-    }
+    # taint {
+    #   key    = "workload-type"
+    #   value  = "preemptible"
+    #   effect = "NO_SCHEDULE"
+    # }
   }
 
   autoscaling {
     min_node_count = 1
-    max_node_count = 10
+    max_node_count = 20
   }
 
   management {
