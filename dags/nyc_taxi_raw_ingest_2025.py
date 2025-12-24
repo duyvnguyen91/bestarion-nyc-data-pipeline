@@ -45,41 +45,37 @@ TABLE_COLUMNS = [
 # ===================================
 
 
-def _file_url(ds: str, year: int, month: int) -> tuple[str, str]:
-    ym = f"{year:04d}-{month:02d}"
-    filename = f"{ds}_tripdata_{ym}.parquet"
-    return f"{BASE_URL}/{filename}", filename
+def file_urls_2025_jan_to_nov(ds: str) -> list[tuple[str, str]]:
+    urls = []
+    for month in range(1, 12):  # 1..11
+        ym = f"2025-{month:02d}"
+        filename = f"{ds}_tripdata_{ym}.parquet"
+        url = f"{BASE_URL}/{filename}"
+        urls.append((url, filename))
+    return urls
 
 
 def download_parquet(**context) -> str:
-    """
-    Download parquet for the execution month (data interval start).
-    """
-    # Use Airflow logical date to decide which month to load
-    logical_date = context["logical_date"]
-    year = logical_date.year
-    month = logical_date.month
+    urls = file_urls_2025_jan_to_nov(DATASET)
 
-    if month > 11:
-        raise AirflowSkipException(
-            f"Month {month} is out of range (Jan–Nov only), skipping"
-        )
+    for url, filename in urls:
+        head = requests.head(url, timeout=30)
+        if head.status_code != 200:
+            continue  # skip missing month
 
-    url, filename = _file_url(DATASET, year, month)
+        # download
+        tmp_dir = tempfile.mkdtemp(prefix="nyc_taxi_")
+        out_path = os.path.join(tmp_dir, filename)
 
-    tmp_dir = tempfile.mkdtemp(prefix="nyc_taxi_")
-    out_path = os.path.join(tmp_dir, filename)
+        with requests.get(url, stream=True, timeout=300) as r:
+            r.raise_for_status()
+            with open(out_path, "wb") as f:
+                for chunk in r.iter_content(8 * 1024 * 1024):
+                    if chunk:
+                        f.write(chunk)
 
-    r = requests.get(url, stream=True, timeout=300)
-    r.raise_for_status()
-    with open(out_path, "wb") as f:
-        for chunk in r.iter_content(chunk_size=8 * 1024 * 1024):
-            if chunk:
-                f.write(chunk)
-
-    context["ti"].xcom_push(key="parquet_path", value=out_path)
-    context["ti"].xcom_push(key="source_url", value=url)
-    return out_path
+        # load into postgres
+        load_into_postgres(out_path)
 
 
 def load_into_postgres(**context) -> None:
