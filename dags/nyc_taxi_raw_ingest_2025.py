@@ -13,14 +13,12 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from psycopg2.extras import execute_values
 
 
-# ====== CONFIG YOU MAY CHANGE ======
-POSTGRES_CONN_ID = "postgres_datalake"          # Airflow Connection ID
-TARGET_TABLE = "raw_taxi_data_2025"             # your table in Postgres
+POSTGRES_CONN_ID = "postgres_datalake"
+TARGET_TABLE = "raw_taxi_data_2025"
 DATASET = "yellow"                              # yellow | green | fhvhv | fhv
 BASE_URL = "https://d37ci6vzurychx.cloudfront.net/trip-data"
-# TLC hosts monthly parquet trip files (see TLC Trip Record Data page) :contentReference[oaicite:1]{index=1}
 
-# Columns in your raw_taxi_data_2025 table (adjust if your table differs)
+# Columns in your raw_taxi_data_2025 table
 TABLE_COLUMNS = [
     "vendor_id",
     "tpep_pickup_datetime",
@@ -42,7 +40,6 @@ TABLE_COLUMNS = [
     "congestion_surcharge",
     "airport_fee",
 ]
-# ===================================
 
 
 def file_urls_2025_jan_to_nov(ds: str) -> list[tuple[str, str]]:
@@ -78,26 +75,18 @@ def download_parquet(**context) -> str:
         load_into_postgres(out_path)
 
 
-def load_into_postgres(parquet_path: str = None, **context) -> None:
+def load_into_postgres(parquet_path: str) -> None:
     """
-    Read parquet -> insert into Postgres raw table.
+    Read ONE parquet file -> insert into Postgres raw table.
     Ignores extra columns not in TARGET_TABLE.
     """
-    parquet_path = context["ti"].xcom_pull(task_ids="download_parquet", key="parquet_path")
     if not parquet_path or not os.path.exists(parquet_path):
-        raise RuntimeError("Parquet file not found from XCom.")
+        raise RuntimeError(f"Parquet file not found: {parquet_path}")
 
     hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
 
-    # Optional: full refresh per run-month (safe for demo)
-    # If you want incremental append, remove this TRUNCATE and add a unique key strategy instead.
-    hook.run(f"TRUNCATE TABLE {TARGET_TABLE};")
-
     pf = pq.ParquetFile(parquet_path)
 
-    # TLC parquet columns are often CamelCase (VendorID, PULocationID, etc.)
-    # We map common TLC names -> your snake_case columns.
-    # If a column doesn't exist, insert NULL.
     name_map = {
         "VendorID": "vendor_id",
         "tpep_pickup_datetime": "tpep_pickup_datetime",
@@ -128,22 +117,20 @@ def load_into_postgres(parquet_path: str = None, **context) -> None:
         VALUES %s
     """
 
-    # Insert in batches
+    # reverse map: target_col -> source_col
+    target_to_source = {tgt: src for src, tgt in name_map.items()}
+
     batch_size = 50000
     page_size = 5000
 
     for batch in pf.iter_batches(batch_size=batch_size):
         tbl = batch.to_pydict()
+        if not tbl:
+            continue
 
-        # Build rows in the exact TABLE_COLUMNS order
+        n = len(next(iter(tbl.values())))
         rows = []
-        # Determine source keys per target col
-        # reverse map: target -> source key (first match)
-        target_to_source = {}
-        for src, tgt in name_map.items():
-            target_to_source[tgt] = src
 
-        n = len(next(iter(tbl.values()))) if tbl else 0
         for i in range(n):
             row = []
             for col in TABLE_COLUMNS:
