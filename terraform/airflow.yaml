@@ -14,7 +14,7 @@ data:
     port: 5432
     db: airflow
     user: postgres
-    pass: 'AiA]-o_R-rBu6+0!'
+    pass: '*******'
 
 dags:
   persistence:
