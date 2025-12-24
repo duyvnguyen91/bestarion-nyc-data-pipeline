@@ -71,12 +71,11 @@ This will create:
 - Jenkins deployment on GKE
 - Airflow deployment on GKE
 
-**Alternative: Single apply (if cluster already exists)**
-
-If you're updating an existing cluster, you can run a single apply:
-
+### Grant permission to access Artifact Registry
 ```bash
-terraform apply
+gcloud projects add-iam-policy-binding civil-treat-482015-n6 \
+  --member="serviceAccount:gke-node-sa@civil-treat-482015-n6.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.reader"
 ```
 
 ## Accessing Services

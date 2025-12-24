@@ -1,8 +1,8 @@
 images:
   airflow:
-    repository: asia-docker.pkg.dev/civil-treat-482015-n6/airflow/airflow
+    repository: asia-east1-docker.pkg.dev/civil-treat-482015-n6/airflow/airflow
     tag: v0.0.1
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
 postgresql:
   enabled: false
@@ -29,3 +29,48 @@ dags:
     subPath: dags
     wait: 30
     sshKeySecret: airflow-git-ssh
+
+# scheduler:
+#   serviceAccount:
+#     create: false
+#     name: airflow
+
+# apiServer:
+#   serviceAccount:
+#     create: false
+#     name: airflow
+
+# workers:
+#   serviceAccount:
+#     create: false
+#     name: airflow
+
+# triggerer:
+#   serviceAccount:
+#     create: false
+#     name: airflow
+
+# webserver:
+#   serviceAccount:
+#     create: false
+#     name: airflow
+
+# statsd:
+#   serviceAccount:
+#     create: false
+#     name: airflow
+
+# dagProcessor:
+#   serviceAccount:
+#     create: false
+#     name: airflow
+
+# createUserJob:
+#   serviceAccount:
+#     create: false
+#     name: airflow
+
+# migrateDatabaseJob:
+#   serviceAccount:
+#     create: false
+#     name: airflow

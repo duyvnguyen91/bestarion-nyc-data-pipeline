@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import requests
 import pyarrow.parquet as pq
 from airflow import DAG
+from airflow.exceptions import AirflowSkipException
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from psycopg2.extras import execute_values
@@ -60,6 +61,17 @@ def download_parquet(**context) -> str:
     month = logical_date.month
 
     url, filename = _file_url(DATASET, year, month)
+
+    try:
+        head = requests.head(url, timeout=30)
+        if head.status_code != 200:
+            raise AirflowSkipException(
+                f"Parquet not available yet, skipping: {url}"
+            )
+    except requests.RequestException as e:
+        raise AirflowSkipException(
+            f"Could not verify file availability, skipping: {url}. Error: {e}"
+        )
 
     tmp_dir = tempfile.mkdtemp(prefix="nyc_taxi_")
     out_path = os.path.join(tmp_dir, filename)
