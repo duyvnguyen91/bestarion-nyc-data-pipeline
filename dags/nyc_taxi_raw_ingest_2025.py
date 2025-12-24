@@ -78,7 +78,7 @@ def download_parquet(**context) -> str:
         load_into_postgres(out_path)
 
 
-def load_into_postgres(**context) -> None:
+def load_into_postgres(parquet_path: str = None, **context) -> None:
     """
     Read parquet -> insert into Postgres raw table.
     Ignores extra columns not in TARGET_TABLE.
@@ -163,7 +163,7 @@ def load_into_postgres(**context) -> None:
 
 default_args = {
     "owner": "airflow",
-    "retries": 2,
+    "retries": 1,
     "retry_delay": timedelta(minutes=5),
 }
 
