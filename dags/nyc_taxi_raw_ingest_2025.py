@@ -52,8 +52,9 @@ def file_urls_2025_jan_to_nov(ds: str) -> list[tuple[str, str]]:
     return urls
 
 
-def download_parquet(**context) -> str:
+def download_parquet(**context):
     urls = file_urls_2025_jan_to_nov(DATASET)
+    parquet_paths = []
 
     for url, filename in urls:
         head = requests.head(url, timeout=30)
@@ -71,81 +72,82 @@ def download_parquet(**context) -> str:
                     if chunk:
                         f.write(chunk)
 
-        # load into postgres
-        load_into_postgres(out_path)
+        parquet_paths.append(out_path)
 
+    context["ti"].xcom_push(key="parquet_paths", value=parquet_paths)
 
-def load_into_postgres(parquet_path: str) -> None:
-    """
-    Read ONE parquet file -> insert into Postgres raw table.
-    Ignores extra columns not in TARGET_TABLE.
-    """
-    if not parquet_path or not os.path.exists(parquet_path):
-        raise RuntimeError(f"Parquet file not found: {parquet_path}")
+def load_into_postgres(**context):
+    parquet_paths = context["ti"].xcom_pull(
+        task_ids="download_parquet",
+        key="parquet_paths"
+    )
+    if not parquet_paths:
+        raise RuntimeError("No parquet files to load")
 
     hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
 
-    pf = pq.ParquetFile(parquet_path)
+    for parquet_path in parquet_paths:
+        pf = pq.ParquetFile(parquet_path)
 
-    name_map = {
-        "VendorID": "vendor_id",
-        "tpep_pickup_datetime": "tpep_pickup_datetime",
-        "tpep_dropoff_datetime": "tpep_dropoff_datetime",
-        "passenger_count": "passenger_count",
-        "trip_distance": "trip_distance",
-        "RatecodeID": "ratecode_id",
-        "store_and_fwd_flag": "store_and_fwd_flag",
-        "PULocationID": "pu_location_id",
-        "DOLocationID": "do_location_id",
-        "payment_type": "payment_type",
-        "fare_amount": "fare_amount",
-        "extra": "extra",
-        "mta_tax": "mta_tax",
-        "tip_amount": "tip_amount",
-        "tolls_amount": "tolls_amount",
-        "improvement_surcharge": "improvement_surcharge",
-        "total_amount": "total_amount",
-        "congestion_surcharge": "congestion_surcharge",
-        "airport_fee": "airport_fee",
-    }
+        name_map = {
+            "VendorID": "vendor_id",
+            "tpep_pickup_datetime": "tpep_pickup_datetime",
+            "tpep_dropoff_datetime": "tpep_dropoff_datetime",
+            "passenger_count": "passenger_count",
+            "trip_distance": "trip_distance",
+            "RatecodeID": "ratecode_id",
+            "store_and_fwd_flag": "store_and_fwd_flag",
+            "PULocationID": "pu_location_id",
+            "DOLocationID": "do_location_id",
+            "payment_type": "payment_type",
+            "fare_amount": "fare_amount",
+            "extra": "extra",
+            "mta_tax": "mta_tax",
+            "tip_amount": "tip_amount",
+            "tolls_amount": "tolls_amount",
+            "improvement_surcharge": "improvement_surcharge",
+            "total_amount": "total_amount",
+            "congestion_surcharge": "congestion_surcharge",
+            "airport_fee": "airport_fee",
+        }
 
-    conn = hook.get_conn()
-    cur = conn.cursor()
+        conn = hook.get_conn()
+        cur = conn.cursor()
 
-    insert_sql = f"""
-        INSERT INTO {TARGET_TABLE} ({", ".join(TABLE_COLUMNS)})
-        VALUES %s
-    """
+        insert_sql = f"""
+            INSERT INTO {TARGET_TABLE} ({", ".join(TABLE_COLUMNS)})
+            VALUES %s
+        """
 
-    # reverse map: target_col -> source_col
-    target_to_source = {tgt: src for src, tgt in name_map.items()}
+        # reverse map: target_col -> source_col
+        target_to_source = {tgt: src for src, tgt in name_map.items()}
 
-    batch_size = 50000
-    page_size = 5000
+        batch_size = 50000
+        page_size = 5000
 
-    for batch in pf.iter_batches(batch_size=batch_size):
-        tbl = batch.to_pydict()
-        if not tbl:
-            continue
+        for batch in pf.iter_batches(batch_size=batch_size):
+            tbl = batch.to_pydict()
+            if not tbl:
+                continue
 
-        n = len(next(iter(tbl.values())))
-        rows = []
+            n = len(next(iter(tbl.values())))
+            rows = []
 
-        for i in range(n):
-            row = []
-            for col in TABLE_COLUMNS:
-                src_key = target_to_source.get(col)
-                if src_key and src_key in tbl:
-                    row.append(tbl[src_key][i])
-                else:
-                    row.append(None)
-            rows.append(tuple(row))
+            for i in range(n):
+                row = []
+                for col in TABLE_COLUMNS:
+                    src_key = target_to_source.get(col)
+                    if src_key and src_key in tbl:
+                        row.append(tbl[src_key][i])
+                    else:
+                        row.append(None)
+                rows.append(tuple(row))
 
-        execute_values(cur, insert_sql, rows, page_size=page_size)
-        conn.commit()
+            execute_values(cur, insert_sql, rows, page_size=page_size)
+            conn.commit()
 
-    cur.close()
-    conn.close()
+        cur.close()
+        conn.close()
 
 
 default_args = {
@@ -158,8 +160,7 @@ with DAG(
     dag_id="nyc_taxi_raw_ingest_2025",
     default_args=default_args,
     start_date=datetime(2025, 1, 1),
-    schedule="@monthly",   # runs once per month
-    catchup=False,         # set True if you want to backfill months
+    catchup=False,         # set True to backfill months
     max_active_runs=1,
     tags=["nyc", "taxi", "raw", "postgres"],
 ) as dag:
@@ -172,6 +173,7 @@ with DAG(
     t2 = PythonOperator(
         task_id="load_into_postgres",
         python_callable=load_into_postgres,
+        retries=0,
     )
 
     t1 >> t2
