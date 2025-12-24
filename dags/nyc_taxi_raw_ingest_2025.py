@@ -60,18 +60,12 @@ def download_parquet(**context) -> str:
     year = logical_date.year
     month = logical_date.month
 
-    url, filename = _file_url(DATASET, year, month)
-
-    try:
-        head = requests.head(url, timeout=30)
-        if head.status_code != 200:
-            raise AirflowSkipException(
-                f"Parquet not available yet, skipping: {url}"
-            )
-    except requests.RequestException as e:
+    if month > 11:
         raise AirflowSkipException(
-            f"Could not verify file availability, skipping: {url}. Error: {e}"
+            f"Month {month} is out of range (Jan–Nov only), skipping"
         )
+
+    url, filename = _file_url(DATASET, year, month)
 
     tmp_dir = tempfile.mkdtemp(prefix="nyc_taxi_")
     out_path = os.path.join(tmp_dir, filename)
