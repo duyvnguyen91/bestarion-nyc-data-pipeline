@@ -1,20 +1,21 @@
-CREATE SCHEMA IF NOT EXISTS taxi;
-
-CREATE TABLE IF NOT EXISTS taxi.pipeline_metadata (
-  pipeline_name text PRIMARY KEY,
-  last_loaded_month date,
-  updated_at timestamptz NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS raw_taxi_data_2025 (
+    vendor_id TEXT,
+    tpep_pickup_datetime TIMESTAMP,
+    tpep_dropoff_datetime TIMESTAMP,
+    passenger_count INTEGER,
+    trip_distance FLOAT,
+    ratecode_id INTEGER,
+    store_and_fwd_flag TEXT,
+    pu_location_id INTEGER,
+    do_location_id INTEGER,
+    payment_type INTEGER,
+    fare_amount FLOAT,
+    extra FLOAT,
+    mta_tax FLOAT,
+    tip_amount FLOAT,
+    tolls_amount FLOAT,
+    improvement_surcharge FLOAT,
+    total_amount FLOAT,
+    congestion_surcharge FLOAT,
+    airport_fee FLOAT
 );
-
--- Raw landing (Bronze)
-CREATE TABLE IF NOT EXISTS taxi.raw_yellow_tripdata (
-  id bigserial PRIMARY KEY,
-  source_month date NOT NULL,
-  source_file text NOT NULL,
-  ingested_at timestamptz NOT NULL DEFAULT now(),
-  payload jsonb NOT NULL
-);
-
--- Optional: prevent double-loading the exact same file/month
-CREATE UNIQUE INDEX IF NOT EXISTS ux_raw_yellow_month_file
-ON taxi.raw_yellow_tripdata (source_month, source_file, id);

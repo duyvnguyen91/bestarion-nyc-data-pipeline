@@ -122,10 +122,21 @@ resource "google_service_account" "gke_node_sa" {
   project      = var.project_id
 }
 
-# Grant necessary permissions to the service account
-resource "google_project_iam_member" "gke_node_sa_permissions" {
-  project = var.project_id
-  role    = "roles/container.nodeServiceAccount"
-  member  = "serviceAccount:${google_service_account.gke_node_sa.email}"
-}
+# Airflow Repository
+# resource "google_artifact_registry_repository" "airflow" {
+#   project       = var.project_id
+#   location      = "asia-east1"
+#   repository_id = "airflow"
+#   description   = "Airflow Docker images"
+#   format        = "DOCKER"
+# }
 
+## Grant permission to pull images from Artifact Registry
+resource "google_artifact_registry_repository_iam_member" "gke_pull_airflow" {
+  project    = var.project_id
+  location   = "asia-east1"
+  repository = "airflow"
+
+  role   = "roles/artifactregistry.reader"
+  member = "serviceAccount:${google_service_account.gke_node_sa.email}"
+}

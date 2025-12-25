@@ -8,13 +8,7 @@ postgresql:
   enabled: false
 
 data:
-  metadataConnection:
-    protocol: postgresql
-    host: 10.72.0.7
-    port: 5432
-    db: airflow
-    user: postgres
-    pass: '*******'
+  metadataSecretName: airflow-metadata-secret
 
 dags:
   persistence:

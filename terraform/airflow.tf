@@ -16,3 +16,39 @@
 #   ]
 # }
 
+locals {
+  airflow_metadata_conn = format(
+    "postgresql://%s:%s@%s:%d/%s",
+    "postgres",
+    random_password.db_password.result,
+    google_sql_database_instance.primary.private_ip_address,
+    5432,
+    "airflow"
+  )
+}
+
+# Airflow Namespace
+resource "kubernetes_namespace" "airflow" {
+  metadata {
+    name = var.airflow_namespace
+  }
+  depends_on = [ google_container_node_pool.default_pool ]
+}
+
+# Airflow Secret
+resource "kubernetes_secret" "airflow_db_secret" {
+  metadata {
+    name      = "airflow-metadata-secret"
+    namespace = "airflow"
+  }
+
+  data = {
+    connection = local.airflow_metadata_conn
+  }
+
+  type = "Opaque"
+
+  depends_on = [
+    kubernetes_namespace.airflow
+  ]
+}

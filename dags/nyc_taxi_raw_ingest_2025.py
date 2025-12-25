@@ -44,7 +44,7 @@ TABLE_COLUMNS = [
 
 def file_urls_2025_jan_to_nov(ds: str) -> list[tuple[str, str]]:
     urls = []
-    for month in range(1, 12):  # 1..11
+    for month in range(9, 12):  # 1..11
         ym = f"2025-{month:02d}"
         filename = f"{ds}_tripdata_{ym}.parquet"
         url = f"{BASE_URL}/{filename}"
