@@ -18,7 +18,7 @@ from psycopg2.extras import execute_values
 # CONFIG
 # =========================================================
 
-POSTGRES_CONN_ID = "postgres_datalake"
+POSTGRES_CONN_ID = "postgres_datalake_2"
 
 RAW_TABLE = "raw_taxi_data_2025"
 SILVER_TABLE = "silver_taxi_trips"
