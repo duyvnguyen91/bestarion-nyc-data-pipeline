@@ -167,7 +167,7 @@ with DAG(
 
     create_raw_table = SQLExecuteQueryOperator(
         task_id="create_raw_table",
-        postgres_conn_id=POSTGRES_CONN_ID,
+        conn_id=POSTGRES_CONN_ID,
         sql=f"""
         CREATE TABLE IF NOT EXISTS {RAW_TABLE} (
             vendor_id INTEGER,
@@ -206,7 +206,7 @@ with DAG(
 
     transform_silver = SQLExecuteQueryOperator(
         task_id="transform_to_silver",
-        postgres_conn_id=POSTGRES_CONN_ID,
+        conn_id=POSTGRES_CONN_ID,
         sql=f"""
         CREATE TABLE IF NOT EXISTS {SILVER_TABLE} AS
         SELECT
@@ -227,7 +227,7 @@ with DAG(
 
     aggregate_gold = SQLExecuteQueryOperator(
         task_id="aggregate_to_gold",
-        postgres_conn_id=POSTGRES_CONN_ID,
+        conn_id=POSTGRES_CONN_ID,
         sql=f"""
         CREATE TABLE IF NOT EXISTS {GOLD_TABLE} AS
         SELECT
