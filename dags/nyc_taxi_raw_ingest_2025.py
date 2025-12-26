@@ -10,7 +10,7 @@ import pyarrow.parquet as pq
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from psycopg2.extras import execute_values
 
 
@@ -165,7 +165,7 @@ with DAG(
     tags=["nyc", "taxi", "bronze", "silver", "gold"],
 ) as dag:
 
-    create_raw_table = PostgresOperator(
+    create_raw_table = SQLExecuteQueryOperator(
         task_id="create_raw_table",
         postgres_conn_id=POSTGRES_CONN_ID,
         sql=f"""
@@ -204,7 +204,7 @@ with DAG(
         retries=0,
     )
 
-    transform_silver = PostgresOperator(
+    transform_silver = SQLExecuteQueryOperator(
         task_id="transform_to_silver",
         postgres_conn_id=POSTGRES_CONN_ID,
         sql=f"""
@@ -225,7 +225,7 @@ with DAG(
         """
     )
 
-    aggregate_gold = PostgresOperator(
+    aggregate_gold = SQLExecuteQueryOperator(
         task_id="aggregate_to_gold",
         postgres_conn_id=POSTGRES_CONN_ID,
         sql=f"""
