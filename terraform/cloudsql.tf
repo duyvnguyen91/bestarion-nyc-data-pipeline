@@ -20,6 +20,10 @@ resource "google_compute_global_address" "cloudsql_private_range" {
   address_type  = "INTERNAL"
   prefix_length = 16
   network       = var.vpc_network_self_link
+
+  lifecycle {
+    prevent_destroy = false
+  }
 }
 
 resource "google_service_networking_connection" "cloudsql_vpc_connection" {
@@ -30,6 +34,10 @@ resource "google_service_networking_connection" "cloudsql_vpc_connection" {
   depends_on = [
     google_project_service.servicenetworking_api
   ]
+
+  lifecycle {
+    prevent_destroy = false
+  }
 }
 
 # CloudSQL Instance

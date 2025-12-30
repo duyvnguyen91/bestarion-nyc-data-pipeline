@@ -137,6 +137,6 @@ resource "google_artifact_registry_repository_iam_member" "gke_pull_airflow" {
   location   = "asia-east1"
   repository = "airflow"
 
-  role   = "roles/artifactregistry.reader"
+  role   = "roles/artifactregistry.writer"
   member = "serviceAccount:${google_service_account.gke_node_sa.email}"
 }

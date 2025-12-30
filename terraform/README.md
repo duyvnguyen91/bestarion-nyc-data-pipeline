@@ -71,12 +71,6 @@ This will create:
 - Jenkins deployment on GKE
 - Airflow deployment on GKE
 
-### Grant permission to access Artifact Registry
-```bash
-gcloud projects add-iam-policy-binding civil-treat-482015-n6 \
-  --member="serviceAccount:gke-node-sa@civil-treat-482015-n6.iam.gserviceaccount.com" \
-  --role="roles/artifactregistry.reader"
-```
 
 ## Accessing Services
 
@@ -92,6 +86,11 @@ Or use the Terraform output:
 
 ```bash
 terraform output get_jenkins_url
+```
+
+Get Jenkins admin password
+```bash
+kubectl get secret jenkins -o go-template='{{ index .data "jenkins-admin-password" }}' | base64 -d
 ```
 
 ### Airflow
