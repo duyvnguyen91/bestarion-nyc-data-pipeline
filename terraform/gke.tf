@@ -115,6 +115,49 @@ resource "google_container_node_pool" "default_pool" {
   }
 }
 
+resource "google_container_node_pool" "vm_pool" {
+  name       = "vm-node-pool"
+  location   = var.zone
+  cluster    = google_container_cluster.primary.name
+  node_count = var.node_count
+
+  node_config {
+    preemptible  = true
+    machine_type = var.machine_type
+
+    # Service account
+    service_account = google_service_account.gke_node_sa.email
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+
+    # Enable workload identity
+    workload_metadata_config {
+      mode = "GKE_METADATA"
+    }
+
+    labels = {
+      workload-type = "preemptible"
+    }
+
+    # taint {
+    #   key    = "workload-type"
+    #   value  = "preemptible"
+    #   effect = "NO_SCHEDULE"
+    # }
+  }
+
+  autoscaling {
+    min_node_count = 1
+    max_node_count = 10
+  }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+}
+
 # Service Account for GKE nodes
 resource "google_service_account" "gke_node_sa" {
   account_id   = "gke-node-sa"
