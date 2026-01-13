@@ -354,17 +354,13 @@ if __name__ == "__main__":
     # Create the user message requesting analysis
     user_message = Content(parts=[Part(text="Please analyze the Terraform plan that has been loaded.")])
     
-    print("\n" + "="*60)
     print("Starting Terraform Plan Analysis")
-    print("="*60 + "\n")
     
     # Run the agent and collect output
     try:
         for event in runner.run(user_id="cli_user", session_id="session_1", new_message=user_message):
             if event.is_final_response():
-                print("\n" + "="*60)
                 print("Analysis Complete")
-                print("="*60 + "\n")
                 if hasattr(event.content, 'parts'):
                     for part in event.content.parts:
                         if hasattr(part, 'text'):
