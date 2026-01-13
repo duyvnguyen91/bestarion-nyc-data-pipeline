@@ -360,6 +360,7 @@ if __name__ == "__main__":
     try:
         for event in runner.run(user_id="cli_user", session_id="session_1", new_message=user_message):
             if event.is_final_response():
+                print("Analysis Complete")
                 if hasattr(event.content, 'parts'):
                     for part in event.content.parts:
                         if hasattr(part, 'text'):
